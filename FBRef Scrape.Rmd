@@ -1,0 +1,225 @@
+---
+title: "FBRef Scrape"
+author: "Sameer Prasad Koppolu"
+date: "2023-04-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, error = TRUE)
+```
+
+```{r}
+library(worldfootballR)
+
+years <- c(2023)
+```
+
+```{r}
+#Standard Stats
+df_std <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "standard",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Passing Stats
+df_passing <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "passing",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Shooting Stats
+df_shooting <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "shooting",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Defensive Stats
+df_defense <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "defense",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Possession Stats
+df_poss <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "possession",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Passing Types
+df_pass_types <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "passing_types",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#GCA
+df_gca <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "gca",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Misc Stats
+df_misc <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "misc",
+                                    team_or_player = "player",
+                                    )
+```
+
+```{r}
+#Goalkeeping Stats
+df_keepers <- fb_big5_advanced_season_stats(season_end_year = years,
+                                    stat_type = "keepers",
+                                    team_or_player = "player",
+                                    )
+```
+
+
+```{r}
+#Perform Joins
+
+library(dplyr)
+library(stringr)
+
+#df_std <- mutate(df_std, Age = 2023-Born)
+#df_shooting <- mutate(df_shooting, Age = 2023-Born)
+#df_passing <- mutate(df_passing, Age = 2023-Born)
+#df_defense <- mutate(df_defense, Age = 2023-Born)
+#df_pass_types <- mutate(df_pass_types, Age = 2023-Born)
+#df_gca <- mutate(df_gca, Age = 2023-Born)
+#df_poss <- mutate(df_poss, Age = 2023-Born)
+#df_misc <- mutate(df_misc, Age = 2023-Born)
+#df_keepers <- mutate(df_keepers, Age = 2023-Born)
+
+#Remove 'Age' and 'Born' from all Dataframes
+#df_std <- select(df_std, -Age, -Born)
+#df_defense <- select(df_defense, -Age, -Born)
+#df_passing <- select(df_passing, -Age, -Born)
+#df_shooting <- select(df_shooting, -Age, -Born)
+#df_keepers <- select(df_keepers, -Age, -Born)
+
+#Join Std with Defense and remove unnecessary columns
+df <- inner_join(df_std, df_defense, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+df <- select(df, -Url.x, -Mins_Per_90_Playing)
+
+#Join with Passing and Remove Unnecessary columns
+df <- inner_join(df, df_passing, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+df <- select(df, -Url.y, -Mins_Per_90.y, -Ast.y, -Url)
+
+df <- rename(df, Ast = Ast.x, Mins_Per_90 = Mins_Per_90.x)
+
+#Join with Shooting and Remove Unnecessary columns
+df <- inner_join(df, df_shooting, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+for(i in colnames(df)){
+  temp <- substr(i, nchar(i) - 2 + 1, nchar(i))
+ if(str_detect(temp, ".y") == TRUE){
+   print(i)
+   df <- select(df, -i)
+ }
+}
+
+df <- select(df, -Url)
+df <- rename(df, xG_Expected = xG_Expected.x,
+             npxG_Expected = npxG_Expected.x,
+             Mins_Per_90 = Mins_Per_90.x)
+
+
+#Join with Pass Types and Remove Unnecessary columns
+df <- inner_join(df, df_pass_types, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+for(i in colnames(df)){
+  temp <- substr(i, nchar(i) - 2 + 1, nchar(i))
+ if(str_detect(temp, ".y") == TRUE){
+   print(i)
+   df <- select(df, -i)
+ }
+}
+
+df <- select(df, -Url)
+df <- rename(df,Mins_Per_90 = Mins_Per_90.x)
+
+
+#Join with GCA and Remove Unnecessary columns
+df <- inner_join(df, df_gca, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+for(i in colnames(df)){
+  temp <- substr(i, nchar(i) - 2 + 1, nchar(i))
+ if(str_detect(temp, ".y") == TRUE){
+   print(i)
+   df <- select(df, -i)
+ }
+}
+
+df <- select(df, -Url)
+df <- rename(df,Mins_Per_90 = Mins_Per_90.x)
+
+
+#Join with Possession and Remove Unnecessary columns
+df <- inner_join(df, df_poss, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+for(i in colnames(df)){
+  temp <- substr(i, nchar(i) - 2 + 1, nchar(i))
+ if(str_detect(temp, ".y") == TRUE){
+   print(i)
+   df <- select(df, -i)
+ }
+}
+
+df <- select(df, -Url)
+df <- rename(df,Mins_Per_90 = Mins_Per_90.x)
+
+
+#Join with Misc and Remove Unnecessary columns
+df <- inner_join(df, df_misc, by = c('Season_End_Year', 'Squad', 'Comp', 'Player', 'Nation', 'Pos', 'Age', 'Born'))
+
+for(i in colnames(df)){
+  temp <- substr(i, nchar(i) - 2 + 1, nchar(i))
+ if(str_detect(temp, ".y") == TRUE){
+   print(i)
+   df <- select(df, -i)
+ }
+}
+
+df <- select(df, -Url)
+df <- rename(df,
+             Mins_Per_90 = Mins_Per_90.x,
+             CrdY = CrdY.x,
+             CrdR = CrdR.x,
+             Int = Int.x)
+
+
+```
+
+```{r}
+
+#Remove Unnecessary Columns from Dataframe only for Keepers
+df_keepers <- select(df_keepers, -Url)
+```
+
+```{r}
+#Remove Goalkeepers from df
+df <- filter(df, Pos != 'GK')
+
+#Export to .CSV
+write.csv(df, 
+          "C:\\Users\\samee\\Desktop\\Analytics\\Soccer Analytics\\New Europe Top 5\\Outfielders.csv", row.names = FALSE, fileEncoding = "UTF-8")
+
+write.csv(df_keepers, 
+          "C:\\Users\\samee\\Desktop\\Analytics\\Soccer Analytics\\New Europe Top 5\\Goalkeepers.csv", row.names=FALSE, fileEncoding = "UTF-8")
+```
